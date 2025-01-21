@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+
+<body>
+    <div style="margin-bottom: 10px;">
+        <input type="number" id="rows" value="10">
+        <input type="button" value="Generate" onclick="draw();">
+        <select id="filterGender">
+            <option value="Any">Any</option>
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+        </select>
+        <select id="filterAgency" multiple></select>
+        </select>
+    </div>
+
+    <canvas id="canvas" width="450" height="1000"></canvas>
+</body>
+<script>
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const width = canvas.width;
+    const height = canvas.height;
+    const cellSize = 50;
+    const cols = width / cellSize;
+    const vtubers = [];
+    let rows = height / cellSize;
+
+    const filterAgency = document.getElementById('filterAgency');
+    const rowsInput = document.getElementById('rows');
+    rowsInput.value = rows;
+
+    rowsInput.addEventListener('change', e => {
+        rows = parseInt(e.target.value);
+    });
+
+    fetch('/vtubers.json')
+        .then(response => response.json())
+        .then(data => {
+            vtubers.push(...data);
+            const agencies = {};
+            vtubers.forEach(vtuber => {
+                if (!agencies[vtuber.affiliation]) {
+                    agencies[vtuber.affiliation] = 1;
+                } else {
+                    agencies[vtuber.affiliation]++;
+                }
+            });
+
+            const sortedAgencies = Object.entries(agencies).sort((a, b) => b[1] - a[1]);
+            sortedAgencies.forEach(([agency, count]) => {
+                const option = document.createElement('option');
+                option.value = agency;
+                option.text = `${agency} (${count})`;
+                option.selected = agency === 'hololive production';
+                filterAgency.appendChild(option);
+            });
+
+            draw();
+        });
+
+    function shuffle(array) {
+        const newArray = [...array];
+        for (let i = newArray.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [newArray[i], newArray[j]] = [newArray[j], newArray[i]];
+        }
+        return newArray;
+    }
+
+    function draw() {
+        // update canvas size
+        canvas.height = rows * cellSize;
+
+        const selectedAgencies = Array.from(filterAgency.selectedOptions).map(option => option.value);
+        const selectedGender = document.getElementById('filterGender').value;
+        console.log(selectedAgencies);
+        let filtered = vtubers.filter(vtuber => {
+            return selectedAgencies.includes(vtuber.affiliation) && (selectedGender === 'Any' || vtuber.gender === selectedGender);
+        });
+        filtered = shuffle(filtered);
+
+        let seatNumber = 1;
+
+        for (let i = 0; i < rows; i++) {
+            for (let j = 0; j < cols; j++) {
+                const x = j * cellSize;
+                const y = i * cellSize;
+
+                if (j === 2 || j === 6) {
+                    continue;
+                }
+
+                const emptySeat = Math.random() < 0.4 || filtered.length === 0;
+                if (emptySeat) {
+                    ctx.fillStyle = 'gray';
+                    ctx.fillRect(x, y, cellSize, cellSize);
+                    ctx.fillStyle = 'black';
+                    ctx.font = '20px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(seatNumber.toString(16).toUpperCase(), x + cellSize / 2, y + cellSize / 2);
+                    seatNumber++;
+                    continue;
+                }
+
+                const v = filtered.pop();
+                const icon = v.image;
+                const img = new Image();
+                img.src = icon;
+                img.onload = () => {
+                    ctx.drawImage(img, x, y, cellSize, cellSize);
+                };
+            }
+        }
+    }
+</script>
+
+</html>
