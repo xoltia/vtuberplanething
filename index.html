@@ -5,18 +5,57 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
+    <style>
+        body {
+            font-family: sans-serif;
+        }
+
+        div {
+            margin-bottom: 10px;
+        }
+
+        label {
+            display: inline-block;
+            width: 200px;
+        }
+
+        input[type="number"] {
+            width: 50px;
+        }
+
+        select {
+            width: 150px;
+        }
+
+        canvas {
+            border: 1px solid black;
+        }
+    </style>
 </head>
 
 <body>
     <div style="margin-bottom: 10px;">
-        <input type="number" id="rows" value="10">
+        <div>
+            <label for="rows">Rows:</label>
+            <input type="number" id="rows" value="10">
+        </div>
+        <div>
+            <label for="vacancyProbability">Vacancy Probability (%):</label>
+            <input type="number" id="vacancyProbability" value="40" min="0" max="100">
+        </div>
+        <div>
+            <label for="filterGender">Gender:</label>
+            <select id="filterGender">
+                <option value="Any">Any</option>
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+            </select>
+        </div>
+        <div>
+            <label for="filterAgency">Agency:</label>
+            <select id="filterAgency" multiple></select>
+        </div>
         <input type="button" value="Generate" onclick="draw();">
-        <select id="filterGender">
-            <option value="Any">Any</option>
-            <option value="Male">Male</option>
-            <option value="Female">Female</option>
-        </select>
-        <select id="filterAgency" multiple></select>
         </select>
     </div>
 
@@ -80,6 +119,7 @@
 
         const selectedAgencies = Array.from(filterAgency.selectedOptions).map(option => option.value);
         const selectedGender = document.getElementById('filterGender').value;
+        const vacancyProbability = parseInt(document.getElementById('vacancyProbability').value) / 100;
         console.log(selectedAgencies);
         let filtered = vtubers.filter(vtuber => {
             return selectedAgencies.includes(vtuber.affiliation) && (selectedGender === 'Any' || vtuber.gender === selectedGender);
@@ -97,7 +137,7 @@
                     continue;
                 }
 
-                const emptySeat = Math.random() < 0.4 || filtered.length === 0;
+                const emptySeat = Math.random() < vacancyProbability || filtered.length === 0;
                 if (emptySeat) {
                     ctx.fillStyle = 'gray';
                     ctx.fillRect(x, y, cellSize, cellSize);
