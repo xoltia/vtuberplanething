@@ -4,10 +4,12 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document</title>
+    <title>VTuber Plane Thingy</title>
     <style>
         body {
             font-family: sans-serif;
+            display: flex;
+            flex-direction: column;
         }
 
         div {
@@ -29,12 +31,56 @@
 
         canvas {
             border: 1px solid black;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        button {
+            padding: 5px 10px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+            border-radius: 3px;
+            margin-top: 10px;
+        }
+
+        button#generate {
+            color: white;
+            background-color: rgb(44, 153, 44);
+            border: none;
+        }
+
+        button#generate:hover {
+            background-color: rgb(34, 133, 34);
+        }
+
+        button#save:hover {
+            background-color: rgb(78, 78, 235);
+        }
+
+        #controls {
+            margin-bottom: 10px;
+            height: 100%;
+            background-color: #f0f0f0;
+            padding: 10px;
+        }
+
+        @media (min-width: 768px) {
+            body {
+                flex-direction: row;
+                justify-content: center;
+                gap: 20px;
+            }
+
+            canvas {
+                margin: 0;
+            }
         }
     </style>
 </head>
 
 <body>
-    <div style="margin-bottom: 10px;">
+    <div id="controls">
         <div>
             <label for="rows">Rows:</label>
             <input type="number" id="rows" value="10">
@@ -55,10 +101,10 @@
             <label for="filterAgency">Agency:</label>
             <select id="filterAgency" multiple></select>
         </div>
-        <input type="button" value="Generate" onclick="draw();">
+        <!-- <input type="button" value="Generate" onclick="draw();"> -->
+        <button id="generate" onclick="draw()">Generate</button>
         </select>
     </div>
-
     <canvas id="canvas" width="450" height="1000"></canvas>
 </body>
 <script>
