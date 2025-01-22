@@ -54,6 +54,12 @@
             background-color: rgb(34, 133, 34);
         }
 
+        button#save {
+            color: white;
+            background-color: rgb(78, 78, 235);
+            border: none;
+        }
+
         button#save:hover {
             background-color: rgb(78, 78, 235);
         }
@@ -103,6 +109,7 @@
         </div>
         <!-- <input type="button" value="Generate" onclick="draw();"> -->
         <button id="generate" onclick="draw()">Generate</button>
+        <button id="save" onclick="saveCanvas()">Save</button>
         </select>
     </div>
     <canvas id="canvas" width="450" height="1000"></canvas>
@@ -215,26 +222,33 @@
                 ctx.drawImage(img, x, y, cellSize, cellSize);
             }
         }
+    }
 
-        async function getAffiliationSpriteSheet(affiliation) {
-            if (sheets[affiliation]) {
-                return sheets[affiliation];
-            }
-            const spriteSheet = await fetch(`./sprites/${affiliation}.png`);
-            const blob = await spriteSheet.blob();
-            const bitmap = createImageBitmap(blob);
-            sheets[affiliation] = bitmap;
-            return bitmap;
+    async function getAffiliationSpriteSheet(affiliation) {
+        if (sheets[affiliation]) {
+            return sheets[affiliation];
         }
+        const spriteSheet = await fetch(`./sprites/${affiliation}.png`);
+        const blob = await spriteSheet.blob();
+        const bitmap = createImageBitmap(blob);
+        sheets[affiliation] = bitmap;
+        return bitmap;
+    }
 
-        async function getImageFromSprite(affiliation, spriteIndex) {
-            const spriteSheet = await getAffiliationSpriteSheet(affiliation);
-            const dimension = spriteSheet.width / cellSize;
-            const x = spriteIndex % dimension;
-            const y = Math.floor(spriteIndex / dimension);
+    async function getImageFromSprite(affiliation, spriteIndex) {
+        const spriteSheet = await getAffiliationSpriteSheet(affiliation);
+        const dimension = spriteSheet.width / cellSize;
+        const x = spriteIndex % dimension;
+        const y = Math.floor(spriteIndex / dimension);
 
-            return createImageBitmap(spriteSheet, x * cellSize, y * cellSize, cellSize, cellSize);
-        }
+        return createImageBitmap(spriteSheet, x * cellSize, y * cellSize, cellSize, cellSize);
+    }
+
+    function saveCanvas() {
+        const link = document.createElement('a');
+        link.download = 'vtuber-plane.png';
+        link.href = canvas.toDataURL();
+        link.click();
     }
 </script>
 
