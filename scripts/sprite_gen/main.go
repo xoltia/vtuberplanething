@@ -122,7 +122,7 @@ func makeIconGroups(vtubers []vtuber) [][]vtuber {
 }
 
 func splitLargeGroups(groups [][]vtuber) [][]vtuber {
-	updatedGroups := make([][]vtuber, 0, len(groups)/2)
+	updatedGroups := make([][]vtuber, 0, len(groups))
 
 	for _, g := range groups {
 		for len(g) >= 1000 {
