@@ -91,14 +91,33 @@ func readVtuberData(filePath string) ([]vtuber, error) {
 }
 
 func makeIconGroups(vtubers []vtuber) [][]vtuber {
-	affiliationGroups := make(map[string][]vtuber, 0)
+	type affiliationGroup struct {
+		name    string
+		vtubers []vtuber
+	}
+
+	// Use array instead of map to preserve order of groups
+	affiliationGroups := make([]*affiliationGroup, 0)
 	for _, v := range vtubers {
-		affiliationGroups[v.Affiliation] = append(affiliationGroups[v.Affiliation], v)
+		found := false
+		for _, g := range affiliationGroups {
+			if g.name == v.Affiliation {
+				g.vtubers = append(g.vtubers, v)
+				found = true
+				continue
+			}
+		}
+		if !found {
+			affiliationGroups = append(affiliationGroups, &affiliationGroup{
+				name:    v.Affiliation,
+				vtubers: []vtuber{v},
+			})
+		}
 	}
 
 	groups := make([][]vtuber, 0, len(affiliationGroups))
 	for _, g := range affiliationGroups {
-		groups = append(groups, g)
+		groups = append(groups, g.vtubers)
 	}
 
 	// TODO: merge small groups, break big groups
