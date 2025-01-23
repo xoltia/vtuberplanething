@@ -9,7 +9,6 @@ import (
 	"image"
 	"image/jpeg"
 	"image/png"
-	"math"
 	"net/url"
 	"os"
 	"path"
@@ -49,17 +48,14 @@ func readIconData(fileName string) (image.Image, error) {
 }
 
 func createSprite(files []string) (image.Image, error) {
-	gridSize := int(math.Ceil(math.Sqrt(float64(len(files)))))
-	pxSize := gridSize * iconSize
-	sprite := image.NewRGBA(image.Rect(0, 0, pxSize, pxSize))
+	sprite := image.NewRGBA(image.Rect(0, 0, len(files)*iconSize, iconSize))
 	for i, name := range files {
 		data, err := readIconData(name)
 		if err != nil {
 			return nil, err
 		}
-		x := (i % gridSize) * iconSize
-		y := (i / gridSize) * iconSize
-		dr := image.Rect(x, y, x+iconSize, y+iconSize)
+		x := i * iconSize
+		dr := image.Rect(x, 0, x+iconSize, iconSize)
 		xdraw.CatmullRom.Scale(sprite, dr, data, data.Bounds(), xdraw.Src, nil)
 	}
 	return sprite, nil
@@ -120,15 +116,30 @@ func makeIconGroups(vtubers []vtuber) [][]vtuber {
 		groups = append(groups, g.vtubers)
 	}
 
+	groups = splitLargeGroups(groups)
 	groups = mergeSmallGroups(groups)
 	return groups
+}
+
+func splitLargeGroups(groups [][]vtuber) [][]vtuber {
+	updatedGroups := make([][]vtuber, 0, len(groups)/2)
+
+	for _, g := range groups {
+		for len(g) >= 1000 {
+			updatedGroups = append(updatedGroups, g[:1000])
+			g = g[1000:]
+		}
+		updatedGroups = append(updatedGroups, g)
+	}
+
+	return updatedGroups
 }
 
 func mergeSmallGroups(groups [][]vtuber) [][]vtuber {
 	updatedGroups := make([][]vtuber, 0, len(groups)/2)
 	currentGroup := []vtuber{}
 	for _, g := range groups {
-		if len(g) >= 20 {
+		if len(g) >= 100 {
 			updatedGroups = append(updatedGroups, g)
 			continue
 		}
