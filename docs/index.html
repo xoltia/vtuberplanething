@@ -8,6 +8,10 @@
     <meta property="og:title" content="VTuber Plane Thing">
     <meta property="og:description" content="You're stuck on a flight with vtubers, where are you sitting?">
     <meta property="og:image" content="https://xoltia.github.io/vtuberplanething/thumbnail.png">
+    <link rel="preload" href="./sprites/0.png" as="image">
+    <link rel="preload" href="./sprites/1.png" as="image">
+    <link rel="preload" href="./sprites/2.png" as="image">
+    <link rel="preload" href="./sprites/3.png" as="image">
     <style>
         body {
             font-family: sans-serif;
@@ -195,7 +199,8 @@
         const selectedGender = document.getElementById('filterGender').value;
         const vacancyProbability = parseInt(document.getElementById('vacancyProbability').value) / 100;
         let filtered = vtubers.filter(vtuber => {
-            return selectedAgencies.includes(vtuber.affiliation) && (selectedGender === 'Any' || vtuber.gender === selectedGender);
+            return selectedAgencies.includes(vtuber.affiliation) &&
+                (selectedGender === 'Any' || vtuber.gender === selectedGender);
         });
         filtered = shuffle(filtered);
 
