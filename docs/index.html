@@ -170,6 +170,13 @@
         return newArray;
     }
 
+    function seatNumberToString(seatNumber) {
+        const row = Math.floor(seatNumber / (cols - 2));
+        const col = seatNumber % (cols - 2);
+        const colLetter = String.fromCharCode('A'.charCodeAt(0) + col);
+        return `${row + 1}${colLetter}`;
+    }
+
     async function draw() {
         // update canvas size
         canvas.height = rows * cellSize;
@@ -183,8 +190,7 @@
         });
         filtered = shuffle(filtered);
 
-        let seatNumber = 1;
-
+        let seatNumber = -1;
         for (let i = 0; i < rows; i++) {
             for (let j = 0; j < cols; j++) {
                 const x = j * cellSize;
@@ -194,6 +200,8 @@
                     continue;
                 }
 
+                seatNumber++;
+
                 const emptySeat = Math.random() < vacancyProbability || filtered.length === 0;
                 if (emptySeat) {
                     ctx.fillStyle = 'gray';
@@ -202,8 +210,7 @@
                     ctx.font = '20px sans-serif';
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
-                    ctx.fillText(seatNumber.toString(16).toUpperCase(), x + cellSize / 2, y + cellSize / 2);
-                    seatNumber++;
+                    ctx.fillText(seatNumberToString(seatNumber), x + cellSize / 2, y + cellSize / 2);
                     continue;
                 }
 
