@@ -236,7 +236,7 @@
         }
         const spriteSheet = await fetch(`./sprites/${spriteNumber}.png`);
         const blob = await spriteSheet.blob();
-        const bitmap = createImageBitmap(blob);
+        const bitmap = await createImageBitmap(blob);
         sheets[spriteNumber] = bitmap;
         return bitmap;
     }
@@ -244,11 +244,11 @@
     async function getImageFromSprite(imgId) {
         const [spriteNumber, spriteIndex] = imgId.split(':').map(Number);
         const spriteSheet = await getAffiliationSpriteSheet(spriteNumber);
-        const dimension = spriteSheet.width / cellSize;
-        const x = spriteIndex % dimension;
-        const y = Math.floor(spriteIndex / dimension);
-
-        return createImageBitmap(spriteSheet, x * cellSize, y * cellSize, cellSize, cellSize);
+        // const dimension = spriteSheet.width / cellSize;
+        // const x = spriteIndex % dimension;
+        // const y = Math.floor(spriteIndex / dimension);
+        // return createImageBitmap(spriteSheet, x * cellSize, y * cellSize, cellSize, cellSize);
+        return createImageBitmap(spriteSheet, cellSize * spriteIndex, 0, cellSize, cellSize);
     }
 
     function saveCanvas() {
