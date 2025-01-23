@@ -24,7 +24,7 @@
             width: 200px;
         }
 
-        input[type=" number"] {
+        input[type="number"] {
             width: 50px;
         }
 
@@ -34,8 +34,7 @@
 
         canvas {
             border: 1px solid black;
-            margin-left:
-                auto;
+            margin-left: auto;
             margin-right: auto;
         }
 
@@ -79,6 +78,7 @@
             body {
                 flex-direction: row;
                 justify-content: center;
+                align-items: start;
                 gap: 20px;
             }
 
@@ -111,26 +111,35 @@
             <label for="filterAgency">Agency:</label>
             <select id="filterAgency" multiple></select>
         </div>
-        <!-- <input type="button" value="Generate" onclick="draw();"> -->
+        <div>
+            <label for="topLimit">Top:</label>
+            <input type="number" id="topLimit"
+                title="Limit the number of vtubers to select from, ordered by popularity">
+        </div>
         <button id="generate" onclick="draw()">Generate</button>
         <button id="save" onclick="saveCanvas()">Save</button>
         </select>
     </div>
-    <canvas id="canvas" width="450" height="1000"></canvas>
+    <canvas id="canvas" width="450"></canvas>
 </body>
 <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    let rows = urlParams.get('rows') ?? 20;
+
+    if (urlParams.has('vacancyProbability')) {
+        document.getElementById('vacancyProbability').value = urlParams.get('vacancyProbability');
+    }
+
+    const cellSize = 50;
     const canvas = document.getElementById('canvas');
     const ctx = canvas.getContext('2d');
-    const width = canvas.width;
-    const height = canvas.height;
-    const cellSize = 50;
-    const cols = width / cellSize;
+    const cols = canvas.width / cellSize;
     const vtubers = [];
     const sheets = {};
-    let rows = height / cellSize;
 
     const filterAgency = document.getElementById('filterAgency');
     const rowsInput = document.getElementById('rows');
+    const topLimit = document.getElementById('topLimit');
 
     rowsInput.value = rows;
     rowsInput.addEventListener('change', e => {
@@ -144,6 +153,8 @@
         })
         .then(data => {
             vtubers.push(...data);
+            topLimit.value = vtubers.length;
+            topLimit.max = vtubers.length;
             const agencies = {};
             vtubers.forEach(vtuber => {
                 if (!agencies[vtuber.affiliation]) {
@@ -153,12 +164,15 @@
                 }
             });
 
+            // Get initial agency from query string
+            const initialAgency = urlParams.get('agency') ?? 'hololive production';
+            console.log(initialAgency);
             const sortedAgencies = Object.entries(agencies).sort((a, b) => b[1] - a[1]);
             sortedAgencies.forEach(([agency, count]) => {
                 const option = document.createElement('option');
                 option.value = agency;
                 option.text = `${agency} (${count})`;
-                option.selected = agency === 'hololive production';
+                option.selected = agency === initialAgency;
                 filterAgency.appendChild(option);
             });
 
@@ -188,8 +202,7 @@
         const selectedAgencies = Array.from(filterAgency.selectedOptions).map(option => option.value);
         const selectedGender = document.getElementById('filterGender').value;
         const vacancyProbability = parseInt(document.getElementById('vacancyProbability').value) / 100;
-        console.log(selectedAgencies);
-        let filtered = vtubers.filter(vtuber => {
+        let filtered = vtubers.slice(0, parseInt(topLimit.value)).filter(vtuber => {
             return selectedAgencies.includes(vtuber.affiliation) && (selectedGender === 'Any' || vtuber.gender === selectedGender);
         });
         filtered = shuffle(filtered);
