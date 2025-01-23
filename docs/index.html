@@ -123,6 +123,7 @@
     const cols = width / cellSize;
     const vtubers = [];
     const sheets = {};
+    const affiliationIds = {};
     let rows = height / cellSize;
 
     const filterAgency = document.getElementById('filterAgency');
@@ -140,11 +141,14 @@
         })
         .then(data => {
             let i = 0;
+            let id = 0;
             let currentAffiliation = data[0].affiliation;
+            affiliationIds[currentAffiliation] = id++;
             for (const vtuber of data) {
                 if (vtuber.affiliation !== currentAffiliation) {
                     i = 0;
                     currentAffiliation = vtuber.affiliation;
+                    affiliationIds[currentAffiliation] = id++;
                 }
                 vtuber.spriteIndex = i++;
             }
@@ -228,7 +232,7 @@
         if (sheets[affiliation]) {
             return sheets[affiliation];
         }
-        const spriteSheet = await fetch(`./sprites/${affiliation}.png`);
+        const spriteSheet = await fetch(`./sprites/${affiliationIds[affiliation]}.png`);
         const blob = await spriteSheet.blob();
         const bitmap = createImageBitmap(blob);
         sheets[affiliation] = bitmap;

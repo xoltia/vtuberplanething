@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"os"
 	"path"
+	"strconv"
 
 	xdraw "golang.org/x/image/draw"
 )
@@ -89,14 +90,19 @@ func readVtuberData(filePath string) ([]vtuber, error) {
 	return vtubers, nil
 }
 
-func makeIconGroups(vtubers []vtuber) map[string][]vtuber {
+func makeIconGroups(vtubers []vtuber) [][]vtuber {
 	affiliationGroups := make(map[string][]vtuber, 0)
 	for _, v := range vtubers {
 		affiliationGroups[v.Affiliation] = append(affiliationGroups[v.Affiliation], v)
 	}
 
+	groups := make([][]vtuber, 0, len(affiliationGroups))
+	for _, g := range affiliationGroups {
+		groups = append(groups, g)
+	}
+
 	// TODO: merge small groups, break big groups
-	return affiliationGroups
+	return groups
 }
 
 func createSpriteFromVtubers(groupID string, vtubers []vtuber) error {
@@ -132,6 +138,11 @@ func createSpriteFromVtubers(groupID string, vtubers []vtuber) error {
 func main() {
 	flag.Parse()
 
+	err := os.MkdirAll(*spritePath, 0700)
+	if err != nil {
+		panic(err)
+	}
+
 	outFile, err := os.Create("vtubers-small.jsonl")
 	if err != nil {
 		panic(err)
@@ -145,8 +156,8 @@ func main() {
 	}
 
 	groups := makeIconGroups(vtubers)
-	for k, g := range groups {
-		err := createSpriteFromVtubers(k, g)
+	for i, g := range groups {
+		err := createSpriteFromVtubers(strconv.Itoa(i), g)
 		if err != nil {
 			panic(err)
 		}
