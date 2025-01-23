@@ -123,7 +123,6 @@
     const cols = width / cellSize;
     const vtubers = [];
     const sheets = {};
-    const affiliationIds = {};
     let rows = height / cellSize;
 
     const filterAgency = document.getElementById('filterAgency');
@@ -140,19 +139,6 @@
             return text.split('\n').filter(Boolean).map(JSON.parse)
         })
         .then(data => {
-            let i = 0;
-            let id = 0;
-            let currentAffiliation = data[0].affiliation;
-            affiliationIds[currentAffiliation] = id++;
-            for (const vtuber of data) {
-                if (vtuber.affiliation !== currentAffiliation) {
-                    i = 0;
-                    currentAffiliation = vtuber.affiliation;
-                    affiliationIds[currentAffiliation] = id++;
-                }
-                vtuber.spriteIndex = i++;
-            }
-
             vtubers.push(...data);
             const agencies = {};
             vtubers.forEach(vtuber => {
@@ -222,25 +208,26 @@
                 }
 
                 const v = filtered.pop();
-                const img = await getImageFromSprite(v.affiliation, v.spriteIndex);
+                const img = await getImageFromSprite(v.image);
                 ctx.drawImage(img, x, y, cellSize, cellSize);
             }
         }
     }
 
-    async function getAffiliationSpriteSheet(affiliation) {
-        if (sheets[affiliation]) {
-            return sheets[affiliation];
+    async function getAffiliationSpriteSheet(spriteNumber) {
+        if (sheets[spriteNumber]) {
+            return sheets[spriteNumber];
         }
-        const spriteSheet = await fetch(`./sprites/${affiliationIds[affiliation]}.png`);
+        const spriteSheet = await fetch(`./sprites/${spriteNumber}.png`);
         const blob = await spriteSheet.blob();
         const bitmap = createImageBitmap(blob);
-        sheets[affiliation] = bitmap;
+        sheets[spriteNumber] = bitmap;
         return bitmap;
     }
 
-    async function getImageFromSprite(affiliation, spriteIndex) {
-        const spriteSheet = await getAffiliationSpriteSheet(affiliation);
+    async function getImageFromSprite(imgId) {
+        const [spriteNumber, spriteIndex] = imgId.split(':').map(Number);
+        const spriteSheet = await getAffiliationSpriteSheet(spriteNumber);
         const dimension = spriteSheet.width / cellSize;
         const x = spriteIndex % dimension;
         const y = Math.floor(spriteIndex / dimension);

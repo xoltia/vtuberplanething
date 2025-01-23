@@ -68,7 +68,7 @@ func createSprite(files []string) (image.Image, error) {
 type vtuber struct {
 	Name        string `json:"name"`
 	Affiliation string `json:"affiliation"`
-	Image       string `json:"image,omitempty"`
+	Image       string `json:"image"`
 	Gender      string `json:"gender"`
 	Language    string `json:"language"`
 }
@@ -162,8 +162,8 @@ func main() {
 			panic(err)
 		}
 
-		for _, v := range g {
-			v.Image = ""
+		for j, v := range g {
+			v.Image = fmt.Sprintf("%d:%d", i, j)
 			err = encoder.Encode(v)
 			if err != nil {
 				panic(err)
