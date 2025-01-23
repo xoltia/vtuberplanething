@@ -120,8 +120,31 @@ func makeIconGroups(vtubers []vtuber) [][]vtuber {
 		groups = append(groups, g.vtubers)
 	}
 
-	// TODO: merge small groups, break big groups
+	groups = mergeSmallGroups(groups)
 	return groups
+}
+
+func mergeSmallGroups(groups [][]vtuber) [][]vtuber {
+	updatedGroups := make([][]vtuber, 0, len(groups)/2)
+	currentGroup := []vtuber{}
+	for _, g := range groups {
+		if len(g) >= 20 {
+			updatedGroups = append(updatedGroups, g)
+			continue
+		}
+
+		currentGroup = append(currentGroup, g...)
+		if len(currentGroup) >= 100 {
+			updatedGroups = append(updatedGroups, currentGroup)
+			currentGroup = []vtuber{}
+		}
+	}
+
+	if len(currentGroup) > 0 {
+		updatedGroups = append(updatedGroups, currentGroup)
+	}
+
+	return updatedGroups
 }
 
 func createSpriteFromVtubers(groupID string, vtubers []vtuber) error {
