@@ -13,6 +13,7 @@ import (
 	"os"
 	"path"
 	"strconv"
+	"sync"
 
 	xdraw "golang.org/x/image/draw"
 )
@@ -207,18 +208,23 @@ func main() {
 		panic(err)
 	}
 
+	wg := sync.WaitGroup{}
 	groups := makeIconGroups(vtubers)
 	for i, g := range groups {
-		err := createSpriteFromVtubers(strconv.Itoa(i), g)
-		if err != nil {
-			panic(err)
-		}
-
-		for j, v := range g {
-			v.Image = fmt.Sprintf("%d:%d", i, j)
-		}
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			err := createSpriteFromVtubers(strconv.Itoa(i), g)
+			if err != nil {
+				panic(err)
+			}
+			for j, v := range g {
+				v.Image = fmt.Sprintf("%d:%d", i, j)
+			}
+		}()
 	}
 
+	wg.Wait()
 	err = json.NewEncoder(outFile).Encode(vtubers)
 	if err != nil {
 		panic(err)
