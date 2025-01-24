@@ -216,9 +216,6 @@ func main() {
 
 		for j, v := range g {
 			v.Image = fmt.Sprintf("%d:%d", i, j)
-			if err != nil {
-				panic(err)
-			}
 		}
 	}
 
