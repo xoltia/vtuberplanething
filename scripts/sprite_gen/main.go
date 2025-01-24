@@ -69,8 +69,8 @@ type vtuber struct {
 	Language    string `json:"language"`
 }
 
-func readVtuberData(filePath string) ([]vtuber, error) {
-	var vtubers []vtuber
+func readVtuberData(filePath string) ([]*vtuber, error) {
+	var vtubers []*vtuber
 
 	f, err := os.Open(filePath)
 	if err != nil {
@@ -86,10 +86,10 @@ func readVtuberData(filePath string) ([]vtuber, error) {
 	return vtubers, nil
 }
 
-func makeIconGroups(vtubers []vtuber) [][]vtuber {
+func makeIconGroups(vtubers []*vtuber) [][]*vtuber {
 	type affiliationGroup struct {
 		name    string
-		vtubers []vtuber
+		vtubers []*vtuber
 	}
 
 	// Use array instead of map to preserve order of groups
@@ -106,12 +106,12 @@ func makeIconGroups(vtubers []vtuber) [][]vtuber {
 		if !found {
 			affiliationGroups = append(affiliationGroups, &affiliationGroup{
 				name:    v.Affiliation,
-				vtubers: []vtuber{v},
+				vtubers: []*vtuber{v},
 			})
 		}
 	}
 
-	groups := make([][]vtuber, 0, len(affiliationGroups))
+	groups := make([][]*vtuber, 0, len(affiliationGroups))
 	for _, g := range affiliationGroups {
 		groups = append(groups, g.vtubers)
 	}
@@ -121,8 +121,8 @@ func makeIconGroups(vtubers []vtuber) [][]vtuber {
 	return groups
 }
 
-func splitLargeGroups(groups [][]vtuber) [][]vtuber {
-	updatedGroups := make([][]vtuber, 0, len(groups))
+func splitLargeGroups(groups [][]*vtuber) [][]*vtuber {
+	updatedGroups := make([][]*vtuber, 0, len(groups))
 
 	for _, g := range groups {
 		for len(g) >= 1000 {
@@ -135,9 +135,9 @@ func splitLargeGroups(groups [][]vtuber) [][]vtuber {
 	return updatedGroups
 }
 
-func mergeSmallGroups(groups [][]vtuber) [][]vtuber {
-	updatedGroups := make([][]vtuber, 0, len(groups)/2)
-	currentGroup := []vtuber{}
+func mergeSmallGroups(groups [][]*vtuber) [][]*vtuber {
+	updatedGroups := make([][]*vtuber, 0, len(groups)/2)
+	currentGroup := []*vtuber{}
 	for _, g := range groups {
 		if len(g) >= 100 {
 			updatedGroups = append(updatedGroups, g)
@@ -147,7 +147,7 @@ func mergeSmallGroups(groups [][]vtuber) [][]vtuber {
 		currentGroup = append(currentGroup, g...)
 		if len(currentGroup) >= 100 {
 			updatedGroups = append(updatedGroups, currentGroup)
-			currentGroup = []vtuber{}
+			currentGroup = []*vtuber{}
 		}
 	}
 
@@ -158,7 +158,7 @@ func mergeSmallGroups(groups [][]vtuber) [][]vtuber {
 	return updatedGroups
 }
 
-func createSpriteFromVtubers(groupID string, vtubers []vtuber) error {
+func createSpriteFromVtubers(groupID string, vtubers []*vtuber) error {
 	iconPaths := make([]string, 0)
 
 	for _, v := range vtubers {
@@ -196,12 +196,11 @@ func main() {
 		panic(err)
 	}
 
-	outFile, err := os.Create("vtubers-small.jsonl")
+	outFile, err := os.Create("vtubers-small.json")
 	if err != nil {
 		panic(err)
 	}
 	defer outFile.Close()
-	encoder := json.NewEncoder(outFile)
 
 	vtubers, err := readVtuberData(*vtuberFile)
 	if err != nil {
@@ -217,10 +216,14 @@ func main() {
 
 		for j, v := range g {
 			v.Image = fmt.Sprintf("%d:%d", i, j)
-			err = encoder.Encode(v)
 			if err != nil {
 				panic(err)
 			}
 		}
+	}
+
+	err = json.NewEncoder(outFile).Encode(vtubers)
+	if err != nil {
+		panic(err)
 	}
 }

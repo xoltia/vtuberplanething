@@ -144,11 +144,8 @@
         rows = parseInt(e.target.value);
     });
 
-    fetch('./vtubers-small.jsonl')
-        .then(response => response.text())
-        .then(text => {
-            return text.split('\n').filter(Boolean).map(JSON.parse)
-        })
+    fetch('./vtubers-small.json')
+        .then(response => response.json())
         .then(data => {
             vtubers.push(...data);
             const agencies = {};
