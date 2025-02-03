@@ -132,12 +132,18 @@
         select {
             width: 100%;
         }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 12px;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
     <div id="controls">
-        <h1 style="font-size: 24px; margin-bottom: 12px; text-align: center;">
+        <h1>
             VTuber Plane Thing
         </h1>
         <div>
@@ -162,8 +168,8 @@
             <label for="filterAgency">Agency</label>
             <select id="filterAgency" multiple size="10"></select>
         </div>
-        <button id="generate" onclick="draw()">Generate</button>
-        <button id="save" onclick="saveCanvas()">Save</button>
+        <button id="generate">Generate</button>
+        <button id="save">Save</button>
         <div id="credit">
             <a href="https://github.com/xoltia/vtuberplanething" target="_blank">
                 <img src="./assets/github.256x244.png" alt="GitHub" height="20">
@@ -179,56 +185,183 @@
     <canvas id="canvas" width="450"></canvas>
 </body>
 <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    let rows = urlParams.get('rows') ?? 20;
+    /**
+     * @typedef {Object} VTuber
+     * @property {String} name
+     * @property {String} image
+     * @property {String} affiliation
+     * @property {String} gender
+     */
 
-    if (urlParams.has('vacancyProbability')) {
-        document.getElementById('vacancyProbability').value = urlParams.get('vacancyProbability');
+    class VTuberGenerator {
+        constructor(vtubers) {
+            /** @type {Array<VTuber>} */
+            this.vtubers = vtubers;
+            /** @type {'Any' | 'Female' | 'Male'} */
+            this.selectedGender = 'Any';
+            /** @type {String[]} */
+            this.selectedAgencies = [];
+            /** @type {Number} */
+            this.vacancyProbability = 0.4;
+            /** @type {VTuber[]} */
+            this.filtered = [];
+        }
+
+        updateSelectedAgencies(agencies) {
+            this.selectedAgencies = agencies;
+            this.reset();
+        }
+
+        updateSelectedGender(gender) {
+            this.selectedGender = gender;
+            this.reset();
+        }
+
+        updateVacancyProbability(probability) {
+            this.vacancyProbability = probability;
+        }
+
+        /**
+         * Get the next VTuber
+         * @returns {VTuber | null}
+         */
+        next() {
+            const shouldGenerate = Math.random() > this.vacancyProbability;
+            if (!shouldGenerate || this.filtered.length === 0)
+                return null;
+            return this.filtered.pop();
+        }
+
+        reset() {
+            this.filtered = this.vtubers.filter(vtuber => {
+                return this.selectedAgencies.includes(vtuber.affiliation) &&
+                    (this.selectedGender === 'Any' || vtuber.gender === this.selectedGender);
+            });
+            shuffle(this.filtered);
+        }
     }
 
-    const cellSize = 50;
-    const canvas = document.getElementById('canvas');
-    const ctx = canvas.getContext('2d');
-    const cols = canvas.width / cellSize;
-    const vtubers = [];
-    const sheets = {};
+    class SeatsCanvas {
+        constructor(opts, vtuberGenerator, cellSize) {
+            /** @type {HTMLCanvasElement} */
+            this.canvas = canvas;
+            /** @type {CanvasRenderingContext2D} */
+            this.ctx = canvas.getContext('2d');
+            /** @type {Number} */
+            this.cellSize = cellSize;
+            /** @type {Number} */
+            this.rows = this.canvas.height / cellSize;
+            /** @type {Number} */
+            this.cols = this.canvas.width / cellSize;
+            /** @type {VTuberGenerator} */
+            this.vtubers = vtuberGenerator;
+            /** @type {Map<Number, ImageBitmap>} */
+            this.sheets = new Map();
+        }
 
-    const filterAgency = document.getElementById('filterAgency');
-    const rowsInput = document.getElementById('rows');
+        async _drawCell(x, y, seatNumber) {
+            const next = this.vtubers.next();
+            if (!next) {
+                this._drawEmptyCell(x, y, seatNumber);
+            } else {
+                await this._drawVTuberCell(x, y, next);
+            }
+        }
 
-    rowsInput.value = rows;
-    rowsInput.addEventListener('change', e => {
-        rows = parseInt(e.target.value);
-    });
+        _drawEmptyCell(x, y, seatNumberStr) {
+            this.ctx.fillStyle = 'gray';
+            this.ctx.fillRect(x, y, this.cellSize, this.cellSize);
+            this.ctx.fillStyle = 'black';
+            this.ctx.font = '20px sans-serif';
+            this.ctx.textAlign = 'center';
+            this.ctx.textBaseline = 'middle';
+            this.ctx.fillText(seatNumberStr, x + this.cellSize / 2, y + this.cellSize / 2);
+        }
 
-    fetch('./vtubers-small.json')
-        .then(response => response.json())
-        .then(data => {
-            vtubers.push(...data);
-            const agencies = {};
-            vtubers.forEach(vtuber => {
-                if (!agencies[vtuber.affiliation]) {
-                    agencies[vtuber.affiliation] = 1;
-                } else {
-                    agencies[vtuber.affiliation]++;
+        async _drawVTuberCell(x, y, vtuber) {
+            const img = await this._getImageFromSprite(vtuber.image);
+            this.ctx.drawImage(img, x, y, this.cellSize, this.cellSize);
+        }
+
+        async _getImageFromSprite(imgId) {
+            const [spriteNumber, spriteIndex] = imgId.split(':').map(Number);
+            const spriteSheet = await this._getAffiliationSpriteSheet(spriteNumber);
+            return createImageBitmap(spriteSheet, this.cellSize * spriteIndex, 0, this.cellSize, this.cellSize);
+        }
+
+        async _getAffiliationSpriteSheet(spriteNumber) {
+            if (this.sheets.has(spriteNumber))
+                return this.sheets.get(spriteNumber);
+
+            const spriteSheet = await fetch(`./sprites/${spriteNumber}.png`);
+            const blob = await spriteSheet.blob();
+            const bitmap = await createImageBitmap(blob);
+            this.sheets.set(spriteNumber, bitmap);
+            return bitmap;
+        }
+
+        updateRows(rows) {
+            this.rows = rows;
+            this.canvas.height = rows * this.cellSize;
+        }
+
+        async draw() {
+            this.vtubers.reset();
+
+            const seatNumberAsString = seatNumber => {
+                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+                const row = Math.floor(seatNumber / 7);
+                const col = seatNumber % 7;
+                return `${row + 1}${letters[col]}`;
+            };
+
+            let seatNumber = 0;
+
+            for (let i = 0; i < this.rows; i++) {
+                for (let j = 0; j < this.cols; j++) {
+                    const x = j * this.cellSize;
+                    const y = i * this.cellSize;
+
+                    if (j === 2 || j === 6) {
+                        continue;
+                    }
+
+                    await this._drawCell(x, y, seatNumberAsString(seatNumber++));
                 }
-            });
+            }
+        }
+    }
 
-            // Get initial agency from query string
-            const initialAgency = urlParams.get('agency') ?? 'hololive production';
-            console.log(initialAgency);
-            const sortedAgencies = Object.entries(agencies).sort((a, b) => b[1] - a[1]);
-            sortedAgencies.forEach(([agency, count]) => {
-                const option = document.createElement('option');
-                option.value = agency;
-                option.text = `${agency} (${count})`;
-                option.selected = agency === initialAgency;
-                filterAgency.appendChild(option);
-            });
+    /**
+     * @returns {Promise<VTuber[]>}
+     */
+    async function loadVTuberData() {
+        const response = await fetch('vtubers-small.json');
+        const data = await response.json();
+        return data;
+    }
 
-            draw();
+    /**
+     * @param {VTuber[]} vtubers
+     * @returns {[]String}
+     */
+    function getUniqueAgencies(vtubers) {
+        const agencies = new Map();
+
+        vtubers.forEach(vtuber => {
+            const count = agencies.get(vtuber.affiliation) ?? 0;
+            agencies.set(vtuber.affiliation, count + 1);
         });
 
+        return Array
+            .from(agencies.keys())
+            .sort((a, b) => agencies.get(b) - agencies.get(a));
+    }
+
+    /**
+     * @param {any[]} array
+     * @returns {any[]}
+     */
     function shuffle(array) {
         const newArray = [...array];
         for (let i = newArray.length - 1; i > 0; i--) {
@@ -238,84 +371,61 @@
         return newArray;
     }
 
-    function seatNumberToString(seatNumber) {
-        const row = Math.floor(seatNumber / (cols - 2));
-        const col = seatNumber % (cols - 2);
-        const colLetter = String.fromCharCode('A'.charCodeAt(0) + col);
-        return `${row + 1}${colLetter}`;
-    }
+    const canvas = document.getElementById('canvas');
+    const rowsInput = document.getElementById('rows');
+    const vacancyProbabilityInput = document.getElementById('vacancyProbability');
+    const filterAgency = document.getElementById('filterAgency');
+    const filterGender = document.getElementById('filterGender');
+    const defaultEnabledAgencies = ['hololive production'];
 
-    async function draw() {
-        // update canvas size
-        canvas.height = rows * cellSize;
+    loadVTuberData().then(vtubers => {
+        const vtuberGenerator = new VTuberGenerator(vtubers);
+        const seatsCanvas = new SeatsCanvas(canvas, vtuberGenerator, 50);
 
-        const selectedAgencies = Array.from(filterAgency.selectedOptions).map(option => option.value);
-        const selectedGender = document.getElementById('filterGender').value;
-        const vacancyProbability = parseInt(document.getElementById('vacancyProbability').value) / 100;
-        let filtered = vtubers.filter(vtuber => {
-            return selectedAgencies.includes(vtuber.affiliation) &&
-                (selectedGender === 'Any' || vtuber.gender === selectedGender);
+        const uniqueAgencies = getUniqueAgencies(vtubers);
+        uniqueAgencies.forEach(agency => {
+            const option = document.createElement('option');
+            option.value = agency;
+            option.text = `${agency} (${vtubers.filter(vtuber => vtuber.affiliation === agency).length})`;
+            option.selected = defaultEnabledAgencies.includes(agency);
+            filterAgency.appendChild(option);
         });
-        filtered = shuffle(filtered);
 
-        let seatNumber = -1;
-        for (let i = 0; i < rows; i++) {
-            for (let j = 0; j < cols; j++) {
-                const x = j * cellSize;
-                const y = i * cellSize;
+        // Default values
+        vtuberGenerator.selectedAgencies = defaultEnabledAgencies;
+        vtuberGenerator.vacancyProbability = parseInt(vacancyProbabilityInput.value) / 100;
+        seatsCanvas.updateRows(parseInt(rowsInput.value));
 
-                if (j === 2 || j === 6) {
-                    continue;
-                }
+        rowsInput.addEventListener('change', e => {
+            seatsCanvas.updateRows(parseInt(e.target.value));
+        });
 
-                seatNumber++;
+        vacancyProbabilityInput.addEventListener('change', e => {
+            vtuberGenerator.updateVacancyProbability(parseInt(e.target.value) / 100);
+        });
 
-                const emptySeat = Math.random() < vacancyProbability || filtered.length === 0;
-                if (emptySeat) {
-                    ctx.fillStyle = 'gray';
-                    ctx.fillRect(x, y, cellSize, cellSize);
-                    ctx.fillStyle = 'black';
-                    ctx.font = '20px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(seatNumberToString(seatNumber), x + cellSize / 2, y + cellSize / 2);
-                    continue;
-                }
+        filterAgency.addEventListener('change', e => {
+            const selectedAgencies = Array.from(filterAgency.selectedOptions).map(option => option.value);
+            vtuberGenerator.updateSelectedAgencies(selectedAgencies);
+        });
 
-                const v = filtered.pop();
-                const img = await getImageFromSprite(v.image);
-                ctx.drawImage(img, x, y, cellSize, cellSize);
-            }
-        }
-    }
+        filterGender.addEventListener('change', e => {
+            vtuberGenerator.updateSelectedGender(e.target.value);
+        });
 
-    async function getAffiliationSpriteSheet(spriteNumber) {
-        if (sheets[spriteNumber]) {
-            return sheets[spriteNumber];
-        }
-        const spriteSheet = await fetch(`./sprites/${spriteNumber}.png`);
-        const blob = await spriteSheet.blob();
-        const bitmap = await createImageBitmap(blob);
-        sheets[spriteNumber] = bitmap;
-        return bitmap;
-    }
+        document.getElementById('generate').addEventListener('click', () => {
+            seatsCanvas.draw();
+        });
 
-    async function getImageFromSprite(imgId) {
-        const [spriteNumber, spriteIndex] = imgId.split(':').map(Number);
-        const spriteSheet = await getAffiliationSpriteSheet(spriteNumber);
-        // const dimension = spriteSheet.width / cellSize;
-        // const x = spriteIndex % dimension;
-        // const y = Math.floor(spriteIndex / dimension);
-        // return createImageBitmap(spriteSheet, x * cellSize, y * cellSize, cellSize, cellSize);
-        return createImageBitmap(spriteSheet, cellSize * spriteIndex, 0, cellSize, cellSize);
-    }
+        document.getElementById('save').addEventListener('click', () => {
+            const link = document.createElement('a');
+            link.download = 'vtuber-plane.png';
+            link.href = canvas.toDataURL();
+            link.click();
+        });
 
-    function saveCanvas() {
-        const link = document.createElement('a');
-        link.download = 'vtuber-plane.png';
-        link.href = canvas.toDataURL();
-        link.click();
-    }
+        seatsCanvas.draw();
+    });
 </script>
 
 </html>
