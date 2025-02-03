@@ -7,33 +7,23 @@
     <title>VTuber Plane Thing</title>
     <meta property="og:title" content="VTuber Plane Thing">
     <meta property="og:description" content="You're stuck on a flight with vtubers, where are you sitting?">
-    <meta property="og:image" content="https://xoltia.github.io/vtuberplanething/thumbnail.png">
+    <meta property="og:image" content="https://xoltia.github.io/vtuberplanething/assets/thumbnail.png">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Sans+Condensed&display=swap" rel="stylesheet">
     <link rel="preload" href="./sprites/0.png" as="image">
     <link rel="preload" href="./sprites/1.png" as="image">
     <link rel="preload" href="./sprites/2.png" as="image">
     <link rel="preload" href="./sprites/3.png" as="image">
     <style>
         body {
-            font-family: sans-serif;
+            font-family: 'Fira Sans Condensed', sans-serif;
             display: flex;
             flex-direction: column;
         }
 
         div {
             margin-bottom: 10px;
-        }
-
-        label {
-            display: inline-block;
-            width: 200px;
-        }
-
-        input[type="number"] {
-            width: 50px;
-        }
-
-        select {
-            width: 150px;
         }
 
         canvas {
@@ -43,7 +33,7 @@
         }
 
         button {
-            padding: 5px 10px;
+            padding: 7px 10px;
             font-size: 16px;
             cursor: pointer;
             width: 100%;
@@ -75,7 +65,8 @@
             margin-bottom: 10px;
             height: 100%;
             background-color: #f0f0f0;
-            padding: 10px;
+            padding: 15px;
+            border-radius: 5px;
         }
 
         @media (min-width: 768px) {
@@ -90,21 +81,77 @@
                 margin: 0;
             }
         }
+
+        #credit {
+            margin-top: 15px;
+            font-size: 12px;
+            display: flex;
+            justify-content: center;
+        }
+
+        #credit a {
+            border-right: 1px solid black;
+            padding-right: 10px;
+        }
+
+        #credit a:last-child {
+            border-right: none;
+            padding-right: 0;
+        }
+
+        #credit a {
+            margin-right: 10px;
+            text-decoration: none;
+            color: black;
+            display: flex;
+            align-items: center;
+        }
+
+        #credit img {
+            margin-right: 5px;
+        }
+
+        #credit a:last-child {
+            margin-right: 0;
+        }
+
+        #credit a:hover {
+            text-decoration: underline;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        input {
+            box-sizing: border-box;
+        }
+
+        input,
+        select {
+            width: 100%;
+        }
     </style>
 </head>
 
 <body>
     <div id="controls">
+        <h1 style="font-size: 24px; margin-bottom: 12px; text-align: center;">
+            VTuber Plane Thing
+        </h1>
         <div>
-            <label for="rows">Rows:</label>
+            <label for="rows">Rows</label>
             <input type="number" id="rows" value="10">
         </div>
         <div>
-            <label for="vacancyProbability">Vacancy Probability (%):</label>
+            <label for="vacancyProbability">
+                Vacancy Probability (%)
+            </label>
             <input type="number" id="vacancyProbability" value="40" min="0" max="100">
         </div>
         <div>
-            <label for="filterGender">Gender:</label>
+            <label for="filterGender">Gender</label>
             <select id="filterGender">
                 <option value="Any">Any</option>
                 <option value="Female">Female</option>
@@ -112,12 +159,22 @@
             </select>
         </div>
         <div>
-            <label for="filterAgency">Agency:</label>
+            <label for="filterAgency">Agency</label>
             <select id="filterAgency" multiple></select>
         </div>
         <button id="generate" onclick="draw()">Generate</button>
         <button id="save" onclick="saveCanvas()">Save</button>
-        </select>
+        <div id="credit">
+            <a href="https://github.com/xoltia/vtuberplanething" target="_blank">
+                <img src="./assets/github.256x244.png" alt="GitHub" height="20">
+                Source Code
+            </a>
+            <a href="https://hololist.net/" target="_blank">
+                <img src="https://hololist.net/wp-content/themes/primary/assets/images/logo.png" alt="Hololive List"
+                    height="20">
+                Data Source
+            </a>
+        </div>
     </div>
     <canvas id="canvas" width="450"></canvas>
 </body>
