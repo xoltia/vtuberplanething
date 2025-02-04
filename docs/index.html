@@ -319,18 +319,15 @@
             this.canvas.height = rows * this.cellSize;
         }
 
+        _seatNumberAsString(seatNumber) {
+            const row = Math.floor(seatNumber / 7);
+            const col = seatNumber % 7;
+            return `${row + 1}${(String.fromCharCode(65 + col))}`;
+        }
+
         async draw() {
             this.vtubers.reset();
-
-            const seatNumberAsString = seatNumber => {
-                const letters = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-                const row = Math.floor(seatNumber / 7);
-                const col = seatNumber % 7;
-                return `${row + 1}${letters[col]}`;
-            };
-
             let seatNumber = 0;
-
             for (let i = 0; i < this.rows; i++) {
                 for (let j = 0; j < this.cols; j++) {
                     const x = j * this.cellSize;
@@ -340,7 +337,23 @@
                         continue;
                     }
 
-                    await this._drawCell(x, y, seatNumberAsString(seatNumber++));
+                    await this._drawCell(x, y, this._seatNumberAsString(seatNumber++));
+                }
+            }
+        }
+
+        drawEmpty() {
+            let seatNumber = 0;
+            for (let i = 0; i < this.rows; i++) {
+                for (let j = 0; j < this.cols; j++) {
+                    const x = j * this.cellSize;
+                    const y = i * this.cellSize;
+
+                    if (j === 2 || j === 6) {
+                        continue;
+                    }
+
+                    this._drawEmptyCell(x, y, this._seatNumberAsString(seatNumber++));
                 }
             }
         }
@@ -408,6 +421,7 @@
 
         rowsInput.addEventListener('change', e => {
             seatsCanvas.updateRows(parseInt(e.target.value));
+            seatsCanvas.drawEmpty();
         });
 
         vacancyProbabilityInput.addEventListener('change', e => {
