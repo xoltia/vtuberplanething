@@ -397,7 +397,7 @@
         const seatsCanvas = new SeatsCanvas(canvas, vtuberGenerator, 50);
 
         const uniqueAgencies = getUniqueAgencies(vtubers);
-        const agenciesOrderedByName = Array.from(uniqueAgencies.keys()).sort();
+        const agenciesOrderedByName = Array.from(uniqueAgencies.keys()).sort((a, b) => a.localeCompare(b));
         const agenciesOrderedByCount = Array.from(uniqueAgencies.keys()).sort((a, b) => uniqueAgencies.get(b) - uniqueAgencies.get(a));
 
 
