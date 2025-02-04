@@ -251,7 +251,7 @@
                 return this.selectedAgencies.includes(vtuber.affiliation) &&
                     (this.selectedGender === 'Any' || vtuber.gender === this.selectedGender);
             });
-            shuffle(this.filtered);
+            this.filtered = shuffle(this.filtered);
         }
     }
 
