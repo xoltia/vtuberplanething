@@ -138,6 +138,15 @@
             margin-bottom: 12px;
             text-align: center;
         }
+
+        #agencyOrderToggle {
+            background-color: rgb(153, 115, 44);
+            color: white;
+            border: none;
+            width: auto;
+            padding: 3px 5px;
+            font-size: 12px;
+        }
     </style>
 </head>
 
@@ -165,7 +174,12 @@
             </select>
         </div>
         <div>
-            <label for="filterAgency">Agency</label>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <label for="filterAgency" style="display: inline-block; margin-bottom: 0;">
+                    Agency
+                </label>
+                <button id="agencyOrderToggle" style="margin: 0;">A - Z</button>
+            </div>
             <select id="filterAgency" multiple size="10"></select>
         </div>
         <button id="generate">Generate</button>
@@ -343,7 +357,7 @@
 
     /**
      * @param {VTuber[]} vtubers
-     * @returns {[]String}
+     * @returns {Map<String, Number>}
      */
     function getUniqueAgencies(vtubers) {
         const agencies = new Map();
@@ -353,9 +367,7 @@
             agencies.set(vtuber.affiliation, count + 1);
         });
 
-        return Array
-            .from(agencies.keys())
-            .sort((a, b) => agencies.get(b) - agencies.get(a));
+        return agencies;
     }
 
     /**
@@ -376,6 +388,8 @@
     const vacancyProbabilityInput = document.getElementById('vacancyProbability');
     const filterAgency = document.getElementById('filterAgency');
     const filterGender = document.getElementById('filterGender');
+    const agencyOrderToggle = document.getElementById('agencyOrderToggle');
+    let agencyOrderByCount = true;
     const defaultEnabledAgencies = ['hololive production'];
 
     loadVTuberData().then(vtubers => {
@@ -383,13 +397,9 @@
         const seatsCanvas = new SeatsCanvas(canvas, vtuberGenerator, 50);
 
         const uniqueAgencies = getUniqueAgencies(vtubers);
-        uniqueAgencies.forEach(agency => {
-            const option = document.createElement('option');
-            option.value = agency;
-            option.text = `${agency} (${vtubers.filter(vtuber => vtuber.affiliation === agency).length})`;
-            option.selected = defaultEnabledAgencies.includes(agency);
-            filterAgency.appendChild(option);
-        });
+        const agenciesOrderedByName = Array.from(uniqueAgencies.keys()).sort();
+        const agenciesOrderedByCount = Array.from(uniqueAgencies.keys()).sort((a, b) => uniqueAgencies.get(b) - uniqueAgencies.get(a));
+
 
         // Default values
         vtuberGenerator.selectedAgencies = defaultEnabledAgencies;
@@ -424,6 +434,25 @@
             link.click();
         });
 
+        const updateAgencyOptions = () => {
+            filterAgency.innerHTML = '';
+            const agencies = agencyOrderByCount ? agenciesOrderedByCount : agenciesOrderedByName;
+            agencies.forEach(agency => {
+                const option = document.createElement('option');
+                option.value = agency;
+                option.text = `${agency} (${uniqueAgencies.get(agency)})`;
+                option.selected = vtuberGenerator.selectedAgencies.includes(agency);
+                filterAgency.appendChild(option);
+            });
+        };
+
+        agencyOrderToggle.addEventListener('click', () => {
+            agencyOrderByCount = !agencyOrderByCount;
+            agencyOrderToggle.innerText = agencyOrderByCount ? 'A - Z' : 'Count';
+            updateAgencyOptions();
+        });
+
+        updateAgencyOptions();
         seatsCanvas.draw();
     });
 </script>
