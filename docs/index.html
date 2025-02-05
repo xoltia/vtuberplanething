@@ -147,6 +147,24 @@
             padding: 3px 5px;
             font-size: 12px;
         }
+
+        #save.copied {
+            animation: copied ease-in-out 1s;
+        }
+
+        @keyframes copied {
+            0% {
+                background-color: rgb(78, 78, 235);
+            }
+
+            50% {
+                background-color: rgb(61, 152, 212);
+            }
+
+            100% {
+                background-color: rgb(78, 78, 235);
+            }
+        }
     </style>
 </head>
 
@@ -396,14 +414,22 @@
         return newArray;
     }
 
+    const supportClipboard = 'ClipboardItem' in window && ClipboardItem.supports('image/png');
+
     const canvas = document.getElementById('canvas');
     const rowsInput = document.getElementById('rows');
     const vacancyProbabilityInput = document.getElementById('vacancyProbability');
     const filterAgency = document.getElementById('filterAgency');
     const filterGender = document.getElementById('filterGender');
     const agencyOrderToggle = document.getElementById('agencyOrderToggle');
+    const saveButton = document.getElementById('save');
+
     let agencyOrderByCount = true;
     const defaultEnabledAgencies = ['hololive production'];
+
+    if (supportClipboard) {
+        saveButton.innerText = 'Copy Image';
+    }
 
     loadVTuberData().then(vtubers => {
         const vtuberGenerator = new VTuberGenerator(vtubers);
@@ -441,11 +467,37 @@
             seatsCanvas.draw();
         });
 
-        document.getElementById('save').addEventListener('click', () => {
-            const link = document.createElement('a');
-            link.download = 'vtuber-plane.png';
-            link.href = canvas.toDataURL();
-            link.click();
+        let saveButtonResetTimeout;
+
+        document.getElementById('save').addEventListener('click', async () => {
+            try {
+                if (supportClipboard) {
+                    /** @type {HTMLCanvasElement} */
+                    const canvas = document.getElementById('canvas');
+                    const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/png'));
+                    await navigator.clipboard.write([
+                        new ClipboardItem({
+                            [blob.type]: blob,
+                        }),
+                    ]);
+
+                    clearTimeout(saveButtonResetTimeout);
+                    saveButton.innerText = 'Copied!';
+                    saveButton.classList.add('copied');
+                    saveButtonResetTimeout = setTimeout(() => {
+                        saveButton.innerText = 'Copy Image';
+                        saveButton.classList.remove('copied');
+                    }, 1000);
+                } else {
+                    const dataUrl = canvas.toDataURL('image/png');
+                    const a = document.createElement('a');
+                    a.href = dataUrl;
+                    a.download = 'vtuber-plane.png';
+                    a.click();
+                }
+            } catch (err) {
+                console.error(err.name, err.message);
+            }
         });
 
         const updateAgencyOptions = () => {
